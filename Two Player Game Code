@@ -1,0 +1,763 @@
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+
+String ready1 = "";
+String ready2 = "";
+
+unsigned long startMillis = 0; 
+unsigned long currentMillis;
+unsigned long period; 
+
+bool pickLight = false;
+bool onRound = false;
+bool pickPeriod = false;
+bool readyStage = false;
+bool resetMode = true;
+
+
+int counter = 0;
+int counter2 = 0;
+int selectedLight;
+
+int redL = 10;
+int yellowL = 9;
+int greenL = 8;
+int blueL = 7;
+
+//player 1
+int blueB = 22;
+int yellowB = 23;
+int redB = 24;
+int greenB = 25;
+
+//player 2
+int blueB2 = 50;
+int yellowB2 = 51;
+int redB2 = 52;
+int greenB2 = 53;
+
+//touch sensors
+int touch1 = 26;
+int touch2 = 27;
+
+//noise maker bzzz
+int buzzer = 6;
+
+//control some beeps
+int p1Beep = 0;
+int p2Beep = 0;
+
+//white lights
+int white1 = 2;
+int white2 = 3;
+int white3 = 4;
+int white4 = 5;
+
+
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+void setup() {
+  // put your setup code here, to run once:
+  currentMillis = millis(); 
+  pinMode(buzzer, OUTPUT);
+  Serial.begin(9600);
+  for(int i = 2; i < 10; i++){
+    pinMode(i, OUTPUT);
+  }
+  for(int i = 22; i < 28; i++){
+    pinMode(i, INPUT);
+  }
+  for(int i = 50; i < 54; i++){
+    pinMode(i, INPUT);
+  }
+
+  randomSeed(analogRead(A15));
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;);
+  }
+  display.clearDisplay();
+  display.invertDisplay(false);
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 10);
+  display.println("P1 Score:0");
+  display.setCursor(0, 40);
+  display.println("P2 Score:0");
+  display.display();
+}
+
+bool countdown(){
+  for(int i = 3; i > 0; i--){
+    unsigned long start = millis();
+    display.clearDisplay();
+    display.setTextSize(4);
+    display.invertDisplay(false);
+    display.setTextColor(WHITE);
+    display.setCursor(55, 20);
+    display.print(i);
+    display.display();
+    tone(buzzer, 300, 300);
+    while(millis() - start < 1000){
+      if(digitalRead(touch1) == LOW || digitalRead(touch2) == LOW){
+        ready1 = "";
+        ready2 = "";
+        delay(100);
+        return false;
+      }
+    }
+  }
+  display.clearDisplay();
+  display.setCursor(5, 20);
+  display.println("START");
+  display.display();
+  tone(buzzer, 400, 200);
+  delay(300);
+  readyStage = false;
+  pickPeriod = true;
+  return true;
+}
+
+void updateDisplay() {
+  if(counter > 9){
+      player1Win();
+    }//counter
+  if(counter2 > 9){
+      player2Win();
+  }//counter 2
+  display.clearDisplay();
+  display.invertDisplay(false);
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 10);
+  display.print("P1 Score:");
+  display.print(counter);
+  display.setCursor(0, 40);
+  display.print("P2 Score:");
+  display.print(counter2);
+  display.display();
+}
+
+void readyDisplay() {
+  display.clearDisplay();
+  display.invertDisplay(false);
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 10);
+  display.print("P1:");
+  display.print(ready1);
+  display.setCursor(0, 40);
+  display.print("P2:");
+  display.print(ready2);
+  display.display();
+}
+
+void falseStartP1(){
+  display.clearDisplay();
+  display.invertDisplay(true);
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(5, 15);
+  display.println("Too Early:");
+  display.setCursor(5, 40);
+  display.print("P1 penalty");
+  display.display();
+  tone(buzzer, 150, 100);
+  delay(200);
+  tone(buzzer, 150, 100);
+  delay(200);
+  tone(buzzer, 150, 100);
+  delay(200);
+  tone(buzzer, 150, 200);
+  delay(3500);
+  if(counter2 == 10){
+    return;
+  }
+  display.clearDisplay();
+  display.invertDisplay(false);
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 10);
+  display.print("P1 Score:");
+  display.print(counter);
+  display.setCursor(0, 40);
+  display.print("P2 Score:");
+  display.print(counter2);
+  display.display();
+  delay(2500);
+  startMillis = millis();
+}
+
+void falseStartP2(){
+  display.clearDisplay();
+  display.invertDisplay(true);
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(5, 15);
+  display.println("Too Early:");
+  display.setCursor(5, 40);
+  display.print("P2 penalty");
+  display.display();
+  tone(buzzer, 150, 100);
+  delay(200);
+  tone(buzzer, 150, 100);
+  delay(200);
+  tone(buzzer, 150, 100);
+  delay(200);
+  tone(buzzer, 150, 200);
+  delay(3500);
+  if(counter == 10){
+    return;
+  }
+  display.clearDisplay();
+  display.invertDisplay(false);
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 10);
+  display.print("P1 Score:");
+  display.print(counter);
+  display.setCursor(0, 40);
+  display.print("P2 Score:");
+  display.print(counter2);
+  display.display();
+  delay(2500);
+  startMillis = millis();
+}
+
+void player1Win() {
+  readyStage = false;
+  pickPeriod = false;
+  onRound = false;
+  pickLight = false;
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.invertDisplay(false);
+  display.setTextColor(WHITE);
+  display.setCursor(17, 15);
+  display.println("Player 1");
+  display.setCursor(35, 40);
+  display.print("Wins!");
+  display.display();
+  //victory song
+  //first
+  tone(buzzer, 392, 120);
+  delay(150);
+  tone(buzzer, 392, 120); 
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 592, 500);
+  delay(1000);
+  //second
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 592, 500);
+  delay(1000);
+  //final
+  tone(buzzer, 392, 120);  
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 592, 500);
+  delay(500);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 592, 500);
+  delay(500);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 592, 500);
+  delay(4500);
+  resetMode = true;
+}
+void player2Win() {
+  readyStage = false;
+  pickPeriod = false;
+  onRound = false;
+  pickLight = false;
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.invertDisplay(false);
+  display.setTextColor(WHITE);
+  display.setCursor(17, 15);
+  display.println("Player 2");
+  display.setCursor(35, 40);
+  display.print("Wins!");
+  display.display();
+  //victory song
+  //first
+  tone(buzzer, 392, 120); 
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120); 
+  delay(150);
+  tone(buzzer, 592, 500);
+  delay(1000);
+  //second
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 592, 500);
+  delay(1000);
+  //final
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 592, 500);
+  delay(500);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120); 
+  delay(150);
+  tone(buzzer, 592, 500);
+  delay(500);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 392, 120);  
+  delay(150);
+  tone(buzzer, 592, 500);
+  delay(1000);
+  delay(4500);
+  resetMode = true;
+}
+
+void p1PS(){
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.invertDisplay(false);
+  display.setTextColor(WHITE);
+  display.setCursor(17, 15);
+  display.println("Player 1");
+  display.setCursor(25, 40);
+  display.print("Got It!");
+  display.display();
+
+
+}
+
+void p2PS(){
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.invertDisplay(false);
+  display.setTextColor(WHITE);
+  display.setCursor(17, 15);
+  display.println("Player 2");
+  display.setCursor(25, 40);
+  display.print("Got It!");
+  display.display();
+}
+void resetScreen(){
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.invertDisplay(false);
+  display.setTextColor(WHITE);
+  display.setCursor(15, 50);
+  display.println("Press any button");
+  display.setCursor(15, 5);
+  display.setTextSize(2);
+  display.println("Speed of");
+  display.setCursor(35, 25);
+  display.println("Light");
+  display.display();
+}
+
+
+void loop() {
+  while(resetMode){
+    resetScreen();
+    counter = 0;
+    counter2 = 0;
+    if(digitalRead(touch1) == HIGH || digitalRead(touch2) == HIGH || digitalRead(redB) == HIGH 
+    || digitalRead(redB2) == HIGH || digitalRead(greenB) == HIGH || digitalRead(greenB2) == HIGH
+    || digitalRead(yellowB) == HIGH || digitalRead(yellowB2) == HIGH || digitalRead(blueB) == HIGH
+    || digitalRead(blueB2) == HIGH ){
+      readyStage = true;
+      resetMode = false;
+    }
+  }
+  while(readyStage && counter2 != 10 && counter != 10){
+    if(counter == 10 || counter2 == 10){
+      return;
+    }
+    if(digitalRead(touch1) == HIGH){
+      ready1 = " Ready!";
+      if(p1Beep == 0){
+        tone(buzzer, 780, 80); // beep 1
+        delay(120);
+        tone(buzzer, 880, 100); // beep 2
+        p1Beep = 1;
+      }
+    }
+    else{
+      ready1 = "";
+      p1Beep = 0;
+    }
+    if(digitalRead(touch2) == HIGH){
+      ready2 = " Ready!";
+      if(p2Beep == 0){
+        tone(buzzer, 780, 80); // beep 1
+        delay(120);
+        tone(buzzer, 880, 100); // beep 2
+        p2Beep = 1;
+      }
+    }
+    else{
+      ready2 = "";
+      p2Beep = 0;
+    }
+    if(ready1 == " Ready!" && ready2 == " Ready!" )
+    {
+      readyDisplay();
+      delay(500);
+      countdown();
+    }
+    readyDisplay();
+  }
+  while(pickPeriod && counter2 != 10 && counter != 10){
+    updateDisplay();
+    currentMillis = millis();              
+    period = random(1000, 10000);
+    Serial.print(period);
+    Serial.println(" milliseconds");
+    pickLight = true;
+    startMillis = currentMillis;         
+    pickPeriod = false;
+  }
+
+  while(pickLight && counter2 != 10 && counter != 10){
+    if(digitalRead(touch2) == LOW){
+      delay(200);
+      counter++;
+      falseStartP2();
+      if(counter == 10){
+        player1Win();
+        return;
+      }
+      else{
+        readyStage = true;
+        pickLight = false;
+        break;
+      }
+  }
+  if(digitalRead(touch1) == LOW){
+      delay(200);
+      counter2++;
+      falseStartP1();
+      if(counter2 == 10){
+        player2Win();
+        return;
+      }
+      else{
+        readyStage = true;
+        pickLight = false;
+        break;
+      }
+  }
+    currentMillis = millis(); 
+    if (currentMillis - startMillis >= period)
+    {
+      selectedLight = random(7, 11);
+      analogWrite(selectedLight, 10);
+      onRound = true;
+      pickLight = false;
+    }
+  }//pickLight
+
+  while(onRound){
+    currentMillis = millis();
+    if(digitalRead(greenB) == HIGH && selectedLight == 8){
+      delay(200);
+      counter++;
+      if(counter == 10){
+        player1Win();
+        return;
+      }
+      p1PS();
+      digitalWrite(selectedLight, LOW);
+      tone(buzzer, 523, 150);
+      analogWrite(white1, 45);
+      analogWrite(white2, 45);
+      delay(140);
+      tone(buzzer, 659, 150); 
+      analogWrite(white1, 0);
+      analogWrite(white2, 0);
+      delay(140);
+      tone(buzzer, 784, 150); 
+      analogWrite(white1, 45);
+      analogWrite(white2, 45);
+      delay(140);
+      tone(buzzer, 1047, 200); 
+      analogWrite(white1, 0);
+      analogWrite(white2, 0);
+      delay(500);
+      updateDisplay();
+      delay(2500);
+      readyStage = true;
+      onRound = false;
+      currentMillis = millis();     
+      startMillis = currentMillis;
+    }
+    if(digitalRead(greenB2) == HIGH && selectedLight == 8){
+      delay(200);
+      counter2++;
+      digitalWrite(selectedLight, LOW);
+      if(counter2 == 10){
+        player2Win();
+        return;
+      }
+      p2PS();
+      tone(buzzer, 1047, 200); 
+      analogWrite(white3, 45);
+      analogWrite(white4, 45);
+      delay(140);
+      tone(buzzer, 784, 150); 
+      analogWrite(white3, 0);
+      analogWrite(white4, 0); 
+      delay(140);
+      tone(buzzer, 659, 150); 
+      analogWrite(white3, 45);
+      analogWrite(white4, 45); 
+      delay(140);
+      tone(buzzer, 523, 150);
+      analogWrite(white3, 0);
+      analogWrite(white4, 0); 
+      delay(500);
+      updateDisplay();
+      delay(2500);
+      readyStage = true;
+      onRound = false;
+      delay(200);
+      currentMillis = millis();     
+      startMillis = currentMillis;
+
+    }
+
+    if(digitalRead(yellowB) == HIGH && selectedLight == 9){
+      delay(200);
+      counter++;
+      if(counter == 10){
+        player1Win();
+        return;
+      }
+      p1PS();
+      digitalWrite(selectedLight, LOW);
+      tone(buzzer, 523, 150);
+      analogWrite(white1, 45);
+      analogWrite(white2, 45);
+      delay(140);
+      tone(buzzer, 659, 150); 
+      analogWrite(white1, 0);
+      analogWrite(white2, 0);
+      delay(140);
+      tone(buzzer, 784, 150); 
+      analogWrite(white1, 45);
+      analogWrite(white2, 45);
+      delay(140);
+      tone(buzzer, 1047, 200); 
+      analogWrite(white1, 0);
+      analogWrite(white2, 0);
+      delay(500);
+      updateDisplay();
+      delay(2500);
+      readyStage = true;
+      onRound = false;
+      currentMillis = millis();     
+      startMillis = currentMillis;
+    }
+    if(digitalRead(yellowB2) == HIGH && selectedLight == 9){
+      delay(200);
+      counter2++;
+      digitalWrite(selectedLight, LOW);
+      if(counter2 == 10){
+        player2Win();
+        return;
+      }
+      p2PS();
+      tone(buzzer, 1047, 200); 
+      analogWrite(white3, 45);
+      analogWrite(white4, 45);
+      delay(140);
+      tone(buzzer, 784, 150); 
+      analogWrite(white3, 0);
+      analogWrite(white4, 0); 
+      delay(140);
+      tone(buzzer, 659, 150); 
+      analogWrite(white3, 45);
+      analogWrite(white4, 45); 
+      delay(140);
+      tone(buzzer, 523, 150);
+      analogWrite(white3, 0);
+      analogWrite(white4, 0); 
+      delay(500);
+      updateDisplay();
+      delay(2500);
+      readyStage = true;
+      onRound = false;
+      delay(200);
+      currentMillis = millis();     
+      startMillis = currentMillis;
+
+    }
+
+    if(digitalRead(redB) == HIGH && selectedLight == 10){
+      delay(200);
+      counter++;
+      if(counter == 10){
+        player1Win();
+        return;
+      }
+      p1PS();
+      digitalWrite(selectedLight, LOW);
+      tone(buzzer, 523, 150);
+      analogWrite(white1, 45);
+      analogWrite(white2, 45);
+      delay(140);
+      tone(buzzer, 659, 150); 
+      analogWrite(white1, 0);
+      analogWrite(white2, 0);
+      delay(140);
+      tone(buzzer, 784, 150); 
+      analogWrite(white1, 45);
+      analogWrite(white2, 45);
+      delay(140);
+      tone(buzzer, 1047, 200); 
+      analogWrite(white1, 0);
+      analogWrite(white2, 0);
+      delay(500);
+      updateDisplay();
+      delay(2500);
+      readyStage = true;
+      onRound = false;
+      currentMillis = millis();     
+      startMillis = currentMillis;
+    }
+    if(digitalRead(redB2) == HIGH && selectedLight == 10){
+      delay(200);
+      counter2++;
+      digitalWrite(selectedLight, LOW);
+      if(counter2 == 10){
+        player2Win();
+        return;
+      }
+      p2PS();
+      tone(buzzer, 1047, 200); 
+      analogWrite(white3, 45);
+      analogWrite(white4, 45);
+      delay(140);
+      tone(buzzer, 784, 150); 
+      analogWrite(white3, 0);
+      analogWrite(white4, 0); 
+      delay(140);
+      tone(buzzer, 659, 150); 
+      analogWrite(white3, 45);
+      analogWrite(white4, 45); 
+      delay(140);
+      tone(buzzer, 523, 150);
+      analogWrite(white3, 0);
+      analogWrite(white4, 0); 
+      delay(500);
+      updateDisplay();
+      delay(2500);
+      readyStage = true;
+      onRound = false;
+      delay(200);
+      currentMillis = millis();     
+      startMillis = currentMillis;
+    }
+
+    if(digitalRead(blueB) == HIGH && selectedLight == 7){
+      delay(200);
+      counter++;
+      if(counter == 10){
+        player1Win();
+        return;
+      }
+      p1PS();
+      digitalWrite(selectedLight, LOW);
+      tone(buzzer, 523, 150);
+      analogWrite(white1, 45);
+      analogWrite(white2, 45);
+      delay(140);
+      tone(buzzer, 659, 150); 
+      analogWrite(white1, 0);
+      analogWrite(white2, 0);
+      delay(140);
+      tone(buzzer, 784, 150); 
+      analogWrite(white1, 45);
+      analogWrite(white2, 45);
+      delay(140);
+      tone(buzzer, 1047, 200); 
+      analogWrite(white1, 0);
+      analogWrite(white2, 0);
+      delay(500);
+      updateDisplay();
+      delay(2500);
+      readyStage = true;
+      onRound = false;
+      currentMillis = millis();     
+      startMillis = currentMillis;
+    }
+    if(digitalRead(blueB2) == HIGH && selectedLight == 7){
+      counter2++;
+      digitalWrite(selectedLight, LOW);
+      if(counter2 == 10){
+        player2Win();
+        return;
+      }
+      p2PS();
+      tone(buzzer, 1047, 200); 
+      analogWrite(white3, 45);
+      analogWrite(white4, 45);
+      delay(140);
+      tone(buzzer, 784, 150); 
+      analogWrite(white3, 0);
+      analogWrite(white4, 0); 
+      delay(140);
+      tone(buzzer, 659, 150); 
+      analogWrite(white3, 45);
+      analogWrite(white4, 45); 
+      delay(140);
+      tone(buzzer, 523, 150);
+      analogWrite(white3, 0);
+      analogWrite(white4, 0); 
+      delay(500);
+      updateDisplay();
+      delay(2500);
+      readyStage = true;
+      onRound = false;
+      delay(200);
+      currentMillis = millis();     
+      startMillis = currentMillis;
+    }//if
+  }// round
+}//loop

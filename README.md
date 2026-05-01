@@ -37,8 +37,7 @@ First player to reach ten points is the winner! <br/>
 - Press too early animation/sounds <br/>
 
 ## Known Issues <br/>
-On rare occasion the readying buttons (black buttons) will think you let go if you reduce the amount of pressure you're putting on them. <br/>
-To prevent getting a false penalty, press down firmly and keep the amount of pressure you are putting on the button the same while waiting for the round to start. <br/>
+On rare occasion the readying buttons (black buttons) will think you let go if you reduce the amount of pressure you're putting on them. To prevent getting a false penalty, press down firmly and keep the amount of pressure you are putting on the button the same while waiting for the round to start. <br/>
   
   
   

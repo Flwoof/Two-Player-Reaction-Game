@@ -23,11 +23,7 @@ _Hardware Needed_ <br/>
 5. Type name of desired library in search bar, **make sure the author name is the same**
 
 **How to Play the Game** <br/>
-When you plug the arduino in your OLED will need a minute to load. After a few seconds you should see "P1, P2" written on the OLED screen. <br/>
-To start the game, each player needs to hold down on their respective black pushbutton. This should make the word "Ready!" appear next to the respective players name. <br/>
-Once both players are holding down their button, a countdown from 3 will begin. Once the screen says START, the round has begun. If you let go <br/>
-before a light has turned on after this point your opponent will gain a point! To win the round, wait until one of the four colored LEDS turns on and press the <br/>
-corresponding button color before your opponent! An LED can turn on after just 1 or up to 10 seconds, so you'll have to remain alert. <br/>
+When you plug the arduino in your OLED will need a minute to load. After a few seconds you should see "P1, P2" written on the OLED screen. To start the game, each player needs to hold down on their respective black pushbutton. This should make the word "Ready!" appear next to the respective players name. Once both players are holding down their button, a countdown from 3 will begin. Once the screen says START, the round has begun. If you let go before a light has turned on after this point your opponent will gain a point! To win the round, wait until one of the four colored LEDS turns on and press the corresponding button color before your opponent! An LED can turn on after just 1 or up to 10 seconds, so you'll have to remain alert. <br/>
 First player to reach ten points is the winner! <br/>
 
 ### _Game Features_ <br/>
